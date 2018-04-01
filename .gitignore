@@ -1,0 +1,7 @@
+*.o
+*~
+doc.pdf
+toto.txt
+noel.jpg
+clientSR
+serverSR

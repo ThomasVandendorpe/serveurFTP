@@ -12,6 +12,21 @@
 #define PORT 2121
 #define BLOC_SIZE 20
 
+void server_cd(int connfd,char* dir){
+  int res=0;
+  if(chdir(dir)==0){
+    res=1;
+  }
+  Rio_writen(connfd,&res,sizeof(int));
+}
+
+void server_pwd(int connfd){
+  char cwd[MAXLINE];
+  getcwd(cwd,sizeof(cwd)-2);
+  Rio_writen(connfd,cwd,strlen(cwd));
+  Rio_writen(connfd,"\n",1);
+}
+
 void server_ls(int connfd){
 
   struct dirent **files;
@@ -19,7 +34,7 @@ void server_ls(int connfd){
   int i;
   char buf[MAXLINE];
 
-  n = scandir(".",&files,0,alphasort);//TODO: à modifier par rapport au repertoire courant
+  n = scandir(".",&files,0,alphasort);
   if(n<0) return;
   Rio_writen(connfd,&n,sizeof(int));
 
@@ -119,6 +134,18 @@ void server_interpreter(int connfd){
     else if(strcmp(buf,"ls")==0){
       server_ls(connfd);
     }
+    else if(strcmp(buf,"pwd")==0){
+      server_pwd(connfd);
+    }
+    else if(strcmp(buf,"cd")==0){
+      buf=strtok(NULL," \n");
+      if(buf!=NULL){
+	server_cd(connfd,buf);
+      }
+      else{
+	printf("Utilisation: cd <nom_du_repertoire>\n");
+      }
+    }
     else if(strcmp(buf,"bye")==0){
       return;
     }
@@ -169,13 +196,6 @@ int main()
 	printf("server connected to %s (%s)\n", client_hostname,client_ip_string);
 
 	/********************/
-	//TODO: Envoie du répertoire courant avec pwd
-	/*char cwd[MAXLINE];
-	getcwd(cwd,sizeof(cwd));
-	int l=strlen(cwd);
-	Rio_writen(connfd,&l,sizeof(int));
-	Rio_writen(connfd,cwd,l);*/
-	
 	//Traitement des commandes
 	server_interpreter(connfd);
 	/*******************/

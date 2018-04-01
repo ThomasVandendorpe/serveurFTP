@@ -7,7 +7,34 @@
 #include "utils.h"
 #define PORT 2121
 
-void client_ls(int clientfd,rio_t rio,char* ligne){
+void client_cd(int clientfd,char* ligne){
+  char* buf;
+  char lignecpy[MAXLINE];
+  strcpy(lignecpy,ligne);
+  buf=strtok(lignecpy," \n");
+  buf=strtok(NULL," \n");
+  if(buf!=NULL){
+    Rio_writen(clientfd,ligne,strlen(ligne));
+    int res=0;
+    Rio_readn(clientfd,&res,sizeof(int));
+    if(res==0){
+      printf("Erreur: impossible d'accéder à %s.\n",buf);
+    }
+  }
+  else{
+    printf("Utilisation: cd <nom_du_repertoire>\n");
+  }
+}
+
+void client_pwd(int clientfd,rio_t* rio,char* ligne){
+  Rio_writen(clientfd, ligne, strlen(ligne));
+
+  char buf[MAXLINE];
+  Rio_readlineb(rio,buf,MAXLINE);
+  printf("%s",buf);
+}
+
+void client_ls(int clientfd,rio_t* rio,char* ligne){
   Rio_writen(clientfd, ligne, strlen(ligne));
   char buf2[MAXLINE];
 
@@ -16,7 +43,7 @@ void client_ls(int clientfd,rio_t rio,char* ligne){
   Rio_readn(clientfd,&nbFiles,sizeof(int));
 
   for(i=0;i<nbFiles;i++){
-    Rio_readlineb(&rio,buf2,MAXLINE);
+    Rio_readlineb(rio,buf2,MAXLINE);
     if(strstr(buf2,"<dir>")!=NULL)
           printf("\033[34m%s\033[0m",buf2);
     else
@@ -149,7 +176,13 @@ void parse_input(int clientfd,rio_t rio){
 	}
       }
       else if(strcmp(buf,"ls")==0){
-	client_ls(clientfd,rio,ligne);
+	client_ls(clientfd,&rio,ligne);
+      }
+      else if(strcmp(buf,"pwd")==0){
+	client_pwd(clientfd,&rio,ligne);
+      }
+      else if(strcmp(buf,"cd")==0){
+	client_cd(clientfd,ligne);
       }
       else if(strcmp(buf,"bye")==0){
 	return;
